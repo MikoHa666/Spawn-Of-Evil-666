@@ -154,6 +154,30 @@ canvas{display:block;width:100%;height:100%;}
   transform:translateY(-1px);}
 #splash-btn:active{transform:translateY(1px);}
 
+/* ── Mobile: strip GPU-heavy CSS effects ───────────────────────────── */
+@media (max-width: 1024px) and (pointer: coarse) {
+  #splash-logo {
+    filter: none;
+    mix-blend-mode: normal;
+  }
+  #win-title {
+    text-shadow: 0 2px 6px rgba(200,0,0,0.8);
+    animation: none;
+  }
+  #title-hud {
+    text-shadow: none;
+  }
+  .member-pip.placed {
+    text-shadow: none;
+  }
+  #rotate-msg {
+    text-shadow: none;
+  }
+  #rotate-msg svg {
+    animation: none;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1516,7 +1540,7 @@ function drawImageChar(ch, s, normalImg, caughtImg){
 
   const drawH = isPlaced ? 190 * s : 110 * s;
   const drawW = drawH * (img.naturalWidth / img.naturalHeight);
-  ctx.drawImage(img, -drawW / 2, -drawH, drawW, drawH);
+  ctx.drawImage(img, (-drawW / 2) | 0, (-drawH) | 0, drawW | 0, drawH | 0);
 }
 
 // ── Moti (Singer) — tall, long dark hair, red scarf ──────────────────────
@@ -1891,7 +1915,7 @@ function drawWaistWrap(ch, ts){
   ctx.lineWidth=5*SCALE;
   ctx.lineCap='round';
   ctx.shadowColor='rgba(255,220,0,0.5)';
-  ctx.shadowBlur=4*SCALE;
+  ctx.shadowBlur = isMobile ? 0 : 4*SCALE;
   // Back half of wrap (drawn first, slightly darker)
   ctx.globalAlpha=0.6;
   ctx.beginPath(); ctx.ellipse(0,0,waistW,5*s,0,Math.PI,Math.PI*2); ctx.stroke();
@@ -1986,7 +2010,7 @@ function drawParticles(){
     ctx.save();
     ctx.globalAlpha=p.life;
     ctx.fillStyle=p.col;
-    ctx.shadowColor=p.col; ctx.shadowBlur=8;
+    if(!isMobile){ ctx.shadowColor=p.col; ctx.shadowBlur=8; }
     ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill();
     ctx.restore();
   }
