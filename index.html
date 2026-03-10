@@ -77,6 +77,21 @@ canvas{display:block;width:100%;height:100%;}
   transition:opacity 1.2s ease, transform 1.2s ease;
 }
 #true-story-maybe.show{opacity:1;transform:translateY(0);}
+#true-story-disclaimer{
+  font-family:'Oswald',sans-serif;
+  font-size:clamp(13px,2.4vw,26px);
+  color:#666;
+  font-style:italic;
+  letter-spacing:.05em;
+  text-align:center;
+  max-width:680px;
+  margin-top:22px;
+  padding:0 24px;
+  opacity:0;
+  transform:translateY(8px);
+  transition:opacity 1.4s ease, transform 1.4s ease;
+}
+#true-story-disclaimer.show{opacity:1;transform:translateY(0);}
 #rotate-msg{
   background:#000;color:#cc2200;
   font-family:'Metal Mania',cursive;font-size:clamp(22px,6vw,42px);
@@ -661,19 +676,38 @@ document.getElementById('splash-btn').addEventListener('pointerdown', e=>{
     }
   }
   // "Based on a true story" cover sequence
+  const _disclaimers = [
+    '\u2026At least that\u2019s how the drummer remembers it.',
+    '\u2026Everyone else was too drunk to confirm.',
+    '\u2026The rest was lost in the mosh pit.',
+    '\u2026Maybe someone from the Gagarin TLV can confirm it.',
+    '\u2026Ask someone in the Night Light in Hamburg about it.',
+    '\u2026The elders of the Internet know it for sure.',
+    '\u2026And three raccoons who witnessed it.',
+    '\u2026Please don\u2019t fact-check this.',
+    '\u2026The lawyers said this was safer.'
+  ];
+  const _pick = _disclaimers[Math.floor(Math.random() * _disclaimers.length)];
   const cover = document.getElementById('true-story-cover');
   const title = document.getElementById('true-story-title');
   const maybe = document.getElementById('true-story-maybe');
+  // Inject randomized disclaimer element
+  const disclaimer = document.createElement('div');
+  disclaimer.id = 'true-story-disclaimer';
+  disclaimer.textContent = _pick;
+  cover.appendChild(disclaimer);
   cover.classList.add('show');
-  // Fade in title immediately
+  // t=0: title fades in
   requestAnimationFrame(()=>{ requestAnimationFrame(()=>{ title.classList.add('show'); }); });
-  // After 3s show "Maybe?"
-  setTimeout(()=>{ maybe.classList.add('show'); }, 3000);
-  // After 6s fade out cover and reveal game
+  // t=4s: "Maybe?" fades in
+  setTimeout(()=>{ maybe.classList.add('show'); }, 4000);
+  // t=7s: disclaimer fades in
+  setTimeout(()=>{ disclaimer.classList.add('show'); }, 7000);
+  // t=10s: fade out cover over 1s, reveal game
   setTimeout(()=>{
     cover.classList.add('fade-out');
     setTimeout(()=>{ cover.style.display='none'; }, 1000);
-  }, 6000);
+  }, isMobile ? 15000 : 13000);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1464,7 +1498,7 @@ function drawChar(ch){
   const _grabBoost = (!isMobile && _isGrabbedOther)
     ? (1.25 + 0.40 * Math.max(0, Math.min(1, (ch.sy - CH*0.55) / (CH*0.365))))
     : 1;
-  const s=SCALE*(1.0+0.45*(ch.sy/(CH)))*CHAR_SCALE*_grabBoost;
+  const s=SCALE*(1.0+0.45*(ch.sy/(CH)))*CHAR_SCALE*_grabBoost*(isMobile ? 1.15 : 1);
   ctx.translate(isMobile ? (ch.sx|0) : ch.sx, isMobile ? (ch.sy|0) : ch.sy);
   // Never mirror caught non-member images — always face forward
   if(ch.facing<0 && !_isGrabbedOther) ctx.scale(-1,1);
