@@ -1799,7 +1799,7 @@ function drawSpeechBubble(text, x, y, s){
   const lines=text.split('\n');
   const bw=Math.max(...lines.map(l=>l.length))*3.6*ms+1*ms;
   const bh=lines.length*13*ms+4*ms;
-  const bx=(x-bw/2)|0; const by=(y-bh)|0;
+  const bx=(x-bw/2)|0; const by=(isMobile ? (y-bh*1.1) : (y-bh))|0;
 
   ctx.fillStyle='rgba(20,0,0,0.92)';
   ctx.strokeStyle='#cc2200'; ctx.lineWidth=1*ms;
