@@ -767,7 +767,7 @@ if(crowdEvent && crowdEvent.type==='wall' && ch.type==='other'){
   ch.x  = ch.sx / CW;
 
 } else {
-  ch.x += ch.vx*dt;
+  ch.x += ch.vx * dt * (isMobile ? 1.25 : 1);
 
 
         if(ch.x<0.03){ch.x=0.03;ch.vx=Math.abs(ch.vx);ch.facing=1;}
@@ -1998,6 +1998,7 @@ function drawParticles(){
 function drawZoneHints(){
   if(hand.state!=='carrying'||!hand.grabbedChar) return;
   const ch = hand.grabbedChar;
+  const TS = isMobile ? SCALE * 1.25 : SCALE; // text scale: 25% bigger on mobile
 
   // ── Roco first-catch: show drums zone + countdown ──────────────────────
   if(ch.name==='Roco' && ch.rocoFirstMode){
@@ -2013,13 +2014,13 @@ function drawZoneHints(){
     ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
-    ctx.font = `bold ${Math.round(15*SCALE)}px Oswald,sans-serif`;
+    ctx.font = `bold ${Math.round(15*TS)}px Oswald,sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#ffaa22';
-    ctx.fillText('Drop RoCo here', sx, sy - r - 12*SCALE);
-    ctx.font = `bold ${Math.round(22*SCALE)}px Oswald,sans-serif`;
+    ctx.fillText('Drop RoCo here', sx, sy - r - 12*TS);
+    ctx.font = `bold ${Math.round(22*TS)}px Oswald,sans-serif`;
     ctx.fillStyle = secsLeft<=2 ? '#ff3300' : '#ffdd44';
-    ctx.fillText(secsLeft, sx, sy - r - 32*SCALE);
+    ctx.fillText(secsLeft, sx, sy - r - 32*TS);
     ctx.restore();
     return;
   }
@@ -2038,13 +2039,13 @@ function drawZoneHints(){
     ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
-    ctx.font = `bold ${Math.round(15*SCALE)}px Oswald,sans-serif`;
+    ctx.font = `bold ${Math.round(15*TS)}px Oswald,sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#44ffdd';
-    ctx.fillText('Drop Aviv here', sx, sy - r - 12*SCALE);
-    ctx.font = `bold ${Math.round(22*SCALE)}px Oswald,sans-serif`;
+    ctx.fillText('Drop Aviv here', sx, sy - r - 12*TS);
+    ctx.font = `bold ${Math.round(22*TS)}px Oswald,sans-serif`;
     ctx.fillStyle = secsLeft<=2 ? '#ff3300' : '#ffdd44';
-    ctx.fillText(secsLeft, sx, sy - r - 32*SCALE);
+    ctx.fillText(secsLeft, sx, sy - r - 32*TS);
     ctx.restore();
     return;
   }
@@ -2063,13 +2064,13 @@ function drawZoneHints(){
     ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.stroke();
     ctx.setLineDash([]);
     ctx.globalAlpha = 1;
-    ctx.font = `bold ${Math.round(15*SCALE)}px Oswald,sans-serif`;
+    ctx.font = `bold ${Math.round(15*TS)}px Oswald,sans-serif`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillStyle = '#5566bb';
-    ctx.fillText('Drop Amir here', sx, sy - r - 12*SCALE);
-    ctx.font = `bold ${Math.round(22*SCALE)}px Oswald,sans-serif`;
+    ctx.fillText('Drop Amir here', sx, sy - r - 12*TS);
+    ctx.font = `bold ${Math.round(22*TS)}px Oswald,sans-serif`;
     ctx.fillStyle = secsLeft<=2 ? '#ff3300' : '#ffdd44';
-    ctx.fillText(secsLeft, sx, sy - r - 32*SCALE);
+    ctx.fillText(secsLeft, sx, sy - r - 32*TS);
     ctx.restore();
     return;
   }
@@ -2089,10 +2090,10 @@ function drawZoneHints(){
     ctx.beginPath(); ctx.arc(sx,sy,r,0,Math.PI*2); ctx.stroke();
     ctx.setLineDash([]);
     if(isCorrect){
-      ctx.font=`bold ${Math.round(15*SCALE)}px Oswald,sans-serif`;
+      ctx.font=`bold ${Math.round(15*TS)}px Oswald,sans-serif`;
       ctx.textAlign='center'; ctx.textBaseline='middle';
       ctx.fillStyle=dz.color;
-      ctx.fillText(`DROP ${heldName.toUpperCase()} HERE`, sx, sy-r-12*SCALE);
+      ctx.fillText(`DROP ${heldName.toUpperCase()} HERE`, sx, sy-r-12*TS);
     }
     ctx.restore();
   });
