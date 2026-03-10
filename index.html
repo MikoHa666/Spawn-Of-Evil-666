@@ -241,6 +241,16 @@ canvas{display:block;width:100%;height:100%;}
 // CANVAS SETUP
 // ═══════════════════════════════════════════════════════════════════════════
 const cv = document.getElementById('cv');
+// Mobile-optimised ellipse: uses arc (circle) instead of ellipse on mobile
+function mEllipse(x, y, rx, ry, rot, start, end){
+  if(isMobile){
+    const r = Math.max(rx, ry);
+    ctx.arc(x|0, y|0, r|0, start, end);
+  } else {
+    ctx.ellipse(x, y, rx, ry, rot, start, end);
+  }
+}
+
 const ctx = cv.getContext('2d');
 let CW, CH, SCALE;
 let specialMode = null; // Can be 'wall' or 'circle'
@@ -1350,19 +1360,19 @@ function drawInstruments(){
 function drawDrums(s){
   // Bass drum
   ctx.fillStyle='#2a1500'; ctx.strokeStyle='#884422'; ctx.lineWidth=2*s;
-  ctx.beginPath(); ctx.ellipse(0,0,38*s,22*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,0,38*s,22*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   // Drum head
   ctx.fillStyle='#1a0800';
-  ctx.beginPath(); ctx.ellipse(0,0,32*s,18*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(0,0,32*s,18*s,0,0,Math.PI*2); ctx.fill();
   ctx.strokeStyle='#cc6622'; ctx.stroke();
   // Snare drum
   ctx.fillStyle='#222'; ctx.strokeStyle='#666'; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(-28*s,-18*s,16*s,9*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(28*s,-18*s,16*s,9*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(-28*s,-18*s,16*s,9*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(28*s,-18*s,16*s,9*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   // Hi-hat cymbal
   ctx.fillStyle='rgba(180,140,40,0.7)'; ctx.strokeStyle='#aa9020'; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(-36*s,-30*s,20*s,5*s,-0.1,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(36*s,-30*s,20*s,5*s,0.1,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(-36*s,-30*s,20*s,5*s,-0.1,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(36*s,-30*s,20*s,5*s,0.1,0,Math.PI*2); ctx.fill(); ctx.stroke();
   // Stand legs
   ctx.strokeStyle='#555'; ctx.lineWidth=2.5*s;
   for(let a=-0.8;a<=0.8;a+=0.8){
@@ -1409,9 +1419,9 @@ function drawGuitarStand(s, type){
   ctx.fillStyle=bodyCol; ctx.strokeStyle=col; ctx.lineWidth=2*s;
   const bw=isBase?18:16; const bh=isBase?40:35;
   // Upper bout
-  ctx.beginPath(); ctx.ellipse(-6*s,-30*s,bw*s*0.7,bh*s*0.42,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(-6*s,-30*s,bw*s*0.7,bh*s*0.42,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   // Lower bout
-  ctx.beginPath(); ctx.ellipse(4*s,-10*s,bw*s,bh*s*0.52,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(4*s,-10*s,bw*s,bh*s*0.52,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   // Neck
   ctx.fillStyle='#3a2810'; ctx.strokeStyle='#886644'; ctx.lineWidth=1.5*s;
   ctx.fillRect(-4*s,-70*s,8*s,45*s);
@@ -1449,7 +1459,7 @@ function drawChar(ch){
   // Shadow — skipped on mobile entirely
   if(!isMobile){
     ctx.fillStyle='rgba(0,0,0,0.4)';
-    ctx.beginPath(); ctx.ellipse(0,28*s,22*s,6*s,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); mEllipse(0,28*s,22*s,6*s,0,0,Math.PI*2); ctx.fill();
   }
 
   // Body shape depends on character
@@ -1536,7 +1546,13 @@ function drawImageChar(ch, s, normalImg, caughtImg){
   } else if(normalImg && normalImg.complete && normalImg.naturalWidth > 0){
     img = normalImg;       // walking (also fallback for placed/caught if sprite missing)
   } else {
-    drawGenericChar(ch, s, ch.col[0], ch.col[1], ch.col[2], ch.col[3]);
+    if(isMobile){
+      // Simple placeholder on mobile while PNG loads — no expensive ellipses
+      ctx.fillStyle = ch.col[0] || '#888';
+      ctx.fillRect(-11*s|0, -50*s|0, 22*s|0, 50*s|0);
+    } else {
+      drawGenericChar(ch, s, ch.col[0], ch.col[1], ch.col[2], ch.col[3]);
+    }
     return;
   }
 
@@ -1556,7 +1572,7 @@ function drawMoti(s,c0,c1,c2,c3){
   ctx.closePath(); ctx.fill();
   // Head
   ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(0,-62*s,13*s,15*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,-62*s,13*s,15*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   // Long dark hair
   ctx.fillStyle='#0d0005';
   ctx.beginPath(); ctx.moveTo(-13*s,-70*s); ctx.lineTo(-18*s,-30*s); ctx.lineTo(-10*s,-48*s);
@@ -1564,12 +1580,12 @@ function drawMoti(s,c0,c1,c2,c3){
   ctx.beginPath(); ctx.moveTo(13*s,-70*s); ctx.lineTo(16*s,-35*s); ctx.lineTo(10*s,-48*s);
   ctx.lineTo(12*s,-70*s); ctx.closePath(); ctx.fill();
   // Eyes
-  ctx.fillStyle='#111'; ctx.beginPath(); ctx.ellipse(-5*s,-63*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(5*s,-63*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#111'; ctx.beginPath(); mEllipse(-5*s,-63*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(5*s,-63*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
   // Microphone in hand
   ctx.fillStyle='#666'; ctx.strokeStyle='#aaa'; ctx.lineWidth=1.5*s;
   ctx.beginPath(); ctx.roundRect(10*s,-42*s,5*s,20*s,2*s); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#333'; ctx.beginPath(); ctx.ellipse(12.5*s,-44*s,5*s,7*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#333'; ctx.beginPath(); mEllipse(12.5*s,-44*s,5*s,7*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   // Legs
   drawLegs(s,'#0d0005',c0);
 }
@@ -1583,15 +1599,15 @@ function drawAlex(s,c0,c1,c2,c3){
   ctx.beginPath(); ctx.moveTo(-8*s,-48*s); ctx.lineTo(12*s,-15*s); ctx.stroke();
   // Head — medium hair
   ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(0,-63*s,13*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,-63*s,13*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   ctx.fillStyle='#1a0808';
-  ctx.beginPath(); ctx.ellipse(0,-73*s,13*s,7*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(0,-73*s,13*s,7*s,0,0,Math.PI*2); ctx.fill();
   // Stubble
   ctx.fillStyle='rgba(80,40,40,0.4)';
-  ctx.beginPath(); ctx.ellipse(0,-57*s,8*s,5*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(0,-57*s,8*s,5*s,0,0,Math.PI*2); ctx.fill();
   // Eyes
-  ctx.fillStyle='#111'; ctx.beginPath(); ctx.ellipse(-4*s,-64*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(4*s,-64*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#111'; ctx.beginPath(); mEllipse(-4*s,-64*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(4*s,-64*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
   drawLegs(s,c1,c0);
 }
 
@@ -1601,7 +1617,7 @@ function drawNero(s,c0,c1,c2,c3){
   ctx.beginPath(); ctx.roundRect(-10*s,-50*s,20*s,42*s,3*s); ctx.fill(); ctx.stroke();
   // Head
   ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(0,-62*s,12*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,-62*s,12*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   // Spiky hair
   ctx.fillStyle='#060f08';
   for(let i=-2;i<=2;i++){
@@ -1612,12 +1628,12 @@ function drawNero(s,c0,c1,c2,c3){
     ctx.closePath(); ctx.fill();
   }
   ctx.fillStyle='#060f08';
-  ctx.beginPath(); ctx.ellipse(0,-72*s,12*s,4*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(0,-72*s,12*s,4*s,0,0,Math.PI*2); ctx.fill();
   // Eyes
-  ctx.fillStyle='#0a2010'; ctx.beginPath(); ctx.ellipse(-4*s,-63*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(4*s,-63*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#0a2010'; ctx.beginPath(); mEllipse(-4*s,-63*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(4*s,-63*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
   // Guitar pick in mouth (detail)
-  ctx.fillStyle=c2; ctx.beginPath(); ctx.ellipse(5*s,-56*s,3*s,2*s,0.3,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle=c2; ctx.beginPath(); mEllipse(5*s,-56*s,3*s,2*s,0.3,0,Math.PI*2); ctx.fill();
   drawLegs(s,'#060f08',c0);
 }
 
@@ -1631,15 +1647,15 @@ function drawYaron(s,c0,c1,c2,c3){
   ctx.fillRect(-10*s,-45*s,20*s,15*s); ctx.globalAlpha=1;
   // Head — round, short hair
   ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(0,-61*s,15*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,-61*s,15*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   ctx.fillStyle='#111';
-  ctx.beginPath(); ctx.ellipse(0,-71*s,15*s,7*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(0,-71*s,15*s,7*s,0,0,Math.PI*2); ctx.fill();
   // Beard
   ctx.fillStyle='rgba(60,40,20,0.7)';
-  ctx.beginPath(); ctx.ellipse(0,-56*s,10*s,7*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(0,-56*s,10*s,7*s,0,0,Math.PI*2); ctx.fill();
   // Eyes
-  ctx.fillStyle='#0a0a05'; ctx.beginPath(); ctx.ellipse(-5*s,-63*s,3*s,3*s,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(5*s,-63*s,3*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#0a0a05'; ctx.beginPath(); mEllipse(-5*s,-63*s,3*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(5*s,-63*s,3*s,3*s,0,0,Math.PI*2); ctx.fill();
   // Drumsticks
   ctx.strokeStyle='#c8a060'; ctx.lineWidth=3*s; ctx.lineCap='round';
   ctx.beginPath(); ctx.moveTo(-18*s,-42*s); ctx.lineTo(-8*s,-10*s); ctx.stroke();
@@ -1659,11 +1675,11 @@ function drawMiko(s,c0,c1,c2,c3){
   ctx.lineTo(12*s,-10*s); ctx.bezierCurveTo(10*s,-30*s,8*s,-55*s,10*s,-74*s); ctx.closePath(); ctx.fill();
   // Head
   ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(0,-63*s,11*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.fillStyle='#d4a800'; ctx.beginPath(); ctx.ellipse(0,-72*s,11*s,5*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(0,-63*s,11*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#d4a800'; ctx.beginPath(); mEllipse(0,-72*s,11*s,5*s,0,0,Math.PI*2); ctx.fill();
   // Eyes — purple tinted
-  ctx.fillStyle='#3a0050'; ctx.beginPath(); ctx.ellipse(-4*s,-64*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(4*s,-64*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#3a0050'; ctx.beginPath(); mEllipse(-4*s,-64*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(4*s,-64*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
   drawLegs(s,c1,c0);
 }
 
@@ -1687,7 +1703,7 @@ function drawGenericChar(ch, s, c0, c1, c2, c3){
 
   // Head
   ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(0,-61*s,12*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,-61*s,12*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
 
   // Hair variation by index
   const hidx=parseInt(ch.name.split(' ').pop())||0;
@@ -1696,17 +1712,17 @@ function drawGenericChar(ch, s, c0, c1, c2, c3){
     ctx.beginPath(); ctx.moveTo(-12*s,-70*s); ctx.lineTo(-16*s,-30*s); ctx.lineTo(-8*s,-48*s); ctx.closePath(); ctx.fill();
     ctx.beginPath(); ctx.moveTo(12*s,-70*s); ctx.lineTo(16*s,-30*s); ctx.lineTo(8*s,-48*s); ctx.closePath(); ctx.fill();
   } else if(hidx%3===1){ // short
-    ctx.beginPath(); ctx.ellipse(0,-71*s,12*s,5*s,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); mEllipse(0,-71*s,12*s,5*s,0,0,Math.PI*2); ctx.fill();
   } else { // mohawk
     for(let i=-1;i<=1;i++){
       ctx.beginPath(); ctx.moveTo(i*4*s,-70*s); ctx.lineTo((i-0.5)*4*s,-84*s); ctx.lineTo((i+0.5)*4*s,-84*s); ctx.closePath(); ctx.fill();
     }
-    ctx.beginPath(); ctx.ellipse(0,-70*s,12*s,4*s,0,0,Math.PI*2); ctx.fill();
+    ctx.beginPath(); mEllipse(0,-70*s,12*s,4*s,0,0,Math.PI*2); ctx.fill();
   }
 
   // Eyes
-  ctx.fillStyle='#111'; ctx.beginPath(); ctx.ellipse(-4*s,-62*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(4*s,-62*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.fillStyle='#111'; ctx.beginPath(); mEllipse(-4*s,-62*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(4*s,-62*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
 
   drawLegs(s,c1,c0);
 }
@@ -1791,7 +1807,7 @@ function drawPlacedInstrument(id, s){
       // Mic held in front
       ctx.fillStyle='#666'; ctx.strokeStyle='#aaa'; ctx.lineWidth=1.5*s;
       ctx.beginPath(); ctx.roundRect(12*s,-46*s,5*s,18*s,2*s); ctx.fill(); ctx.stroke();
-      ctx.fillStyle='#333'; ctx.beginPath(); ctx.ellipse(14.5*s,-48*s,5*s,6*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#333'; ctx.beginPath(); mEllipse(14.5*s,-48*s,5*s,6*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
       break;
     case 'bass':
       drawSmallGuitar(s,'bass'); break;
@@ -1813,8 +1829,8 @@ function drawSmallGuitar(s, type){
   const col=isBase?'#3366cc':'#336622';
   ctx.save(); ctx.translate(14*s,-28*s); ctx.rotate(-0.4);
   ctx.fillStyle=isBase?'#1a2040':'#1a2810'; ctx.strokeStyle=col; ctx.lineWidth=1.5*s;
-  ctx.beginPath(); ctx.ellipse(0,-8*s,10*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
-  ctx.beginPath(); ctx.ellipse(3*s,8*s,13*s,15*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,-8*s,10*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(3*s,8*s,13*s,15*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
   ctx.fillStyle='#2a1808'; ctx.fillRect(-3*s,-28*s,6*s,22*s);
   ctx.restore();
 }
@@ -1890,7 +1906,7 @@ function drawHandPalm(holding, ts){
     ctx.fill(); ctx.stroke(); ctx.restore();
   });
   ctx.fillStyle='rgba(255,255,220,.38)';
-  ctx.beginPath(); ctx.ellipse(-4,-28,7,13,0.3,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(-4,-28,7,13,0.3,0,Math.PI*2); ctx.fill();
   if(holding){
     ctx.fillStyle='rgba(255,220,0,.5)';
     [[-16,6,3.5,8],[4,12,3.5,7],[17,5,3,7]].forEach(([dx,dy,rx,ry])=>{
@@ -1919,10 +1935,10 @@ function drawWaistWrap(ch, ts){
   if(!isMobile){ ctx.shadowColor='rgba(255,220,0,0.5)'; ctx.shadowBlur=4*SCALE; } else { ctx.shadowColor='transparent'; ctx.shadowBlur=0; }
   // Back half of wrap (drawn first, slightly darker)
   ctx.globalAlpha=0.6;
-  ctx.beginPath(); ctx.ellipse(0,0,waistW,5*s,0,Math.PI,Math.PI*2); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,0,waistW,5*s,0,Math.PI,Math.PI*2); ctx.stroke();
   // Knot bump on side
   ctx.globalAlpha=1.0;
-  ctx.beginPath(); ctx.ellipse(0,0,waistW,5*s,0,0,Math.PI); ctx.stroke();
+  ctx.beginPath(); mEllipse(0,0,waistW,5*s,0,0,Math.PI); ctx.stroke();
   // Knot
   ctx.fillStyle='#f2d000'; ctx.strokeStyle='#b89800'; ctx.lineWidth=2*SCALE;
   ctx.shadowBlur=0;
