@@ -668,6 +668,7 @@ document.getElementById('splash-btn').addEventListener('pointerdown', e=>{
 // UPDATE
 // ═══════════════════════════════════════════════════════════════════════════
 let lastTime = 0;
+let _fpsCount = 0, _fpsLast = 0, _fpsCurrent = 0;
 let gameWon = false;
 let winTimer = 0;
 let winDelayTimer = 0;
@@ -2175,6 +2176,8 @@ function drawZoneHints(){
 // ═══════════════════════════════════════════════════════════════════════════
 function render(ts){
   requestAnimationFrame(render);
+  _fpsCount++;
+  if(ts - _fpsLast > 1000){ _fpsCurrent = _fpsCount; _fpsCount = 0; _fpsLast = ts; }
   const dt=Math.min((ts-(lastTime||ts))/16.67, isMobile ? 2 : 3);
   lastTime=ts;
 
@@ -2238,9 +2241,15 @@ function render(ts){
     ctx.fillStyle=`rgba(255,30,0,${0.04*Math.sin(ts/120)})`;
     ctx.fillRect(0,0,CW,CH);
   }
+
+  // FPS counter (top-left, always visible for debugging)
+  ctx.font = 'bold 16px monospace';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(6, 6, 72, 22);
+  ctx.fillStyle = _fpsCurrent < 30 ? '#ff4444' : _fpsCurrent < 50 ? '#ffaa00' : '#44ff88';
+  ctx.fillText('FPS: ' + _fpsCurrent, 10, 9);
 }
 
-requestAnimationFrame(render);
-</script>
+requestAnimationFrame(render);</script>
 </body>
 </html>
