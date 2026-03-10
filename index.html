@@ -974,7 +974,7 @@ if(crowdEvent && crowdEvent.type==='wall' && ch.type==='other'){
       if(ch.state !== 'lineup') continue;
       const dx = ch.lineupTargetX - ch.sx;
       const dy = ch.lineupTargetY - ch.sy;
-      const speed = (isMobile ? 3.75 : 5) * dt;
+      const speed = (isMobile ? 2.8 : 5) * dt;
       if(Math.abs(dx) > 2 || Math.abs(dy) > 2){
         const dist = Math.sqrt(dx*dx + dy*dy);
         ch.sx += (dx/dist) * Math.min(speed, dist);
@@ -1444,11 +1444,17 @@ function drawChar(ch){
   if(ch.facing<0 && !_isGrabbedOther) ctx.scale(-1,1);
 
   // Wobble
-  if(ch.wobble>0.5) ctx.rotate(Math.sin(ch.bobPhase*3)*ch.wobble*0.008);
+  if(ch.wobble>0.5 && !isMobile) ctx.rotate(Math.sin(ch.bobPhase*3)*ch.wobble*0.008);
 
-  // Shadow
+  // Shadow — arc on mobile (ellipse is expensive on mobile GPUs)
   ctx.fillStyle='rgba(0,0,0,0.4)';
-  ctx.beginPath(); ctx.ellipse(0,28*s,22*s,6*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath();
+  if(isMobile){
+    ctx.arc(0, 28*s|0, 14*s|0, 0, Math.PI*2);
+  } else {
+    ctx.ellipse(0, 28*s, 22*s, 6*s, 0, 0, Math.PI*2);
+  }
+  ctx.fill();
 
   // Body shape depends on character
   const [c0,c1,c2,c3]=ch.col;
@@ -1462,7 +1468,7 @@ function drawChar(ch){
       const urgency=ch.escapeTimer/(2*60);
       // Big floating countdown digit above the character
       const digitSize=Math.round(21*s);
-      const pulse=1+0.18*Math.sin(Date.now()/120);
+      const pulse = isMobile ? 1 : 1+0.18*Math.sin(Date.now()/120);
       ctx.save();
       ctx.scale(pulse,pulse);
       ctx.font=`900 ${digitSize}px Oswald,Impact,sans-serif`;
