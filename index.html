@@ -595,6 +595,7 @@ const elementImages = {};
 // CHARACTER INSTANCES
 // ═══════════════════════════════════════════════════════════════════════════
 let chars = [];
+let walkingChars = []; // pre-filtered each frame — avoids per-frame .filter() in render
 function initChars(){
   chars = ALL_DEFS.map((def,i)=>({
     ...def,
@@ -961,6 +962,8 @@ if(crowdEvent && crowdEvent.type==='wall' && ch.type==='other'){
       crowdLineupTimer = 0;
       crowdEvent = null; // end any active event
       const others = chars.filter(c => c.type==='other' && c.state!=='placed');
+      // Shuffle so lineup order is random each game
+      for(let i=others.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [others[i],others[j]]=[others[j],others[i]]; }
       const count = others.length;
       others.forEach((ch, i) => {
         const margin = CW * 0.06;
@@ -1279,10 +1282,11 @@ function drawStage(){
   const stageBot = CH*STAGE_BOT;
   const stageH = stageBot-stageTop;
 
-  // ── Stage background image ────────────────────────────────────────────
+  // ── Stage background image — covers full canvas (whole venue) ─────────────
   if(stageImg.complete && stageImg.naturalWidth>0){
     ctx.drawImage(stageImg, 0, 0, CW, CH);
   } else {
+    // Fallback gradient while image loads
     const bg=ctx.createLinearGradient(0,0,0,stageTop);
     bg.addColorStop(0,'#0a0005');
     bg.addColorStop(1,'#12000a');
@@ -1333,7 +1337,7 @@ function drawInstruments(){
     ctx.globalAlpha=alpha;
     ctx.translate(isMobile ? (sx|0) : sx, isMobile ? (sy|0) : sy);
 
-    // Drop zone element PNG
+    // Drop zone element PNG. Hidden when member is placed.
     if(!placed){
       const elImg = elementImages[dz.id];
       if(elImg && elImg.complete && elImg.naturalWidth > 0){
@@ -1342,6 +1346,7 @@ function drawInstruments(){
         ctx.globalAlpha = isMobile ? 0.9 : 0.85 + 0.15 * Math.sin(Date.now() / 600);
         ctx.drawImage(elImg, (-elW/2)|0, (-elH)|0, elW|0, elH|0);
       } else {
+        // Fallback: subtle glow ring while PNG loads or if missing
         ctx.strokeStyle = dz.color;
         ctx.lineWidth = 2 * s;
         ctx.globalAlpha = isMobile ? 0.3 : 0.25 + 0.15 * Math.sin(Date.now() / 400);
@@ -1355,6 +1360,86 @@ function drawInstruments(){
   });
 }
 
+function drawDrums(s){
+  // Bass drum
+  ctx.fillStyle='#2a1500'; ctx.strokeStyle='#884422'; ctx.lineWidth=2*s;
+  ctx.beginPath(); mEllipse(0,0,38*s,22*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Drum head
+  ctx.fillStyle='#1a0800';
+  ctx.beginPath(); mEllipse(0,0,32*s,18*s,0,0,Math.PI*2); ctx.fill();
+  ctx.strokeStyle='#cc6622'; ctx.stroke();
+  // Snare drum
+  ctx.fillStyle='#222'; ctx.strokeStyle='#666'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(-28*s,-18*s,16*s,9*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(28*s,-18*s,16*s,9*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Hi-hat cymbal
+  ctx.fillStyle='rgba(180,140,40,0.7)'; ctx.strokeStyle='#aa9020'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(-36*s,-30*s,20*s,5*s,-0.1,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(36*s,-30*s,20*s,5*s,0.1,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Stand legs
+  ctx.strokeStyle='#555'; ctx.lineWidth=2.5*s;
+  for(let a=-0.8;a<=0.8;a+=0.8){
+    ctx.beginPath(); ctx.moveTo(0,14*s); ctx.lineTo(Math.cos(a+Math.PI/2)*50*s,30*s); ctx.stroke();
+  }
+  // Drumsticks (crossed)
+  ctx.strokeStyle='#c8a060'; ctx.lineWidth=2.5*s; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-30*s,-38*s); ctx.lineTo(15*s,-10*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(30*s,-38*s); ctx.lineTo(-15*s,-10*s); ctx.stroke();
+}
+
+function drawMicStand(s){
+  // Stand pole
+  ctx.strokeStyle='#888'; ctx.lineWidth=3*s; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(0,30*s); ctx.lineTo(0,-50*s); ctx.stroke();
+  // Tripod base
+  ctx.lineWidth=2*s;
+  for(let a=0;a<3;a++){
+    const ang=a*Math.PI*2/3+Math.PI/2;
+    ctx.beginPath(); ctx.moveTo(0,28*s); ctx.lineTo(Math.cos(ang)*28*s,40*s); ctx.stroke();
+  }
+  // Mic capsule
+  ctx.fillStyle='#333'; ctx.strokeStyle='#888'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(-8*s,-72*s,16*s,28*s,6*s); ctx.fill(); ctx.stroke();
+  // Mic grille
+  ctx.strokeStyle='#555';
+  for(let i=0;i<4;i++) {
+    ctx.beginPath(); ctx.moveTo(-7*s,-70*s+i*6*s); ctx.lineTo(7*s,-70*s+i*6*s); ctx.stroke();
+  }
+  // Boom arm
+  ctx.strokeStyle='#777'; ctx.lineWidth=2.5*s;
+  ctx.beginPath(); ctx.moveTo(0,-30*s); ctx.lineTo(-28*s,-48*s); ctx.stroke();
+}
+
+function drawGuitarStand(s, type){
+  const isBase = type==='bass';
+  const col = isBase?'#3355aa':'#445533';
+  const bodyCol = isBase?'#1a2a55':'#1a2210';
+  // Stand
+  ctx.strokeStyle='#555'; ctx.lineWidth=2*s;
+  ctx.beginPath(); ctx.moveTo(0,30*s); ctx.lineTo(0,-50*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(-20*s,28*s); ctx.lineTo(20*s,28*s); ctx.stroke();
+  // Guitar body
+  ctx.fillStyle=bodyCol; ctx.strokeStyle=col; ctx.lineWidth=2*s;
+  const bw=isBase?18:16; const bh=isBase?40:35;
+  // Upper bout
+  ctx.beginPath(); mEllipse(-6*s,-30*s,bw*s*0.7,bh*s*0.42,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Lower bout
+  ctx.beginPath(); mEllipse(4*s,-10*s,bw*s,bh*s*0.52,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Neck
+  ctx.fillStyle='#3a2810'; ctx.strokeStyle='#886644'; ctx.lineWidth=1.5*s;
+  ctx.fillRect(-4*s,-70*s,8*s,45*s);
+  ctx.strokeRect(-4*s,-70*s,8*s,45*s);
+  // Headstock
+  ctx.fillStyle='#2a1a08'; ctx.strokeStyle='#886644'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(-7*s,-82*s,14*s,14*s,3*s); ctx.fill(); ctx.stroke();
+  // Strings
+  ctx.strokeStyle='rgba(200,190,160,0.5)'; ctx.lineWidth=0.8*s;
+  const nStr=isBase?4:6;
+  for(let i=0;i<nStr;i++){
+    const sx2=(-3+(i*(6/(nStr-1))))*s;
+    ctx.beginPath(); ctx.moveTo(sx2,-78*s); ctx.lineTo(sx2+2*s,20*s); ctx.stroke();
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DRAWING — CHARACTERS
@@ -1363,7 +1448,7 @@ function drawChar(ch){
   if(ch.state==='placed') return; // drawn by drawPlacedChars
   ctx.save();
   const _isGrabbedOther = (ch.state==='grabbed' && ch.type==='other');
-  const _grabBoost = _isGrabbedOther
+  const _grabBoost = (!isMobile && _isGrabbedOther)
     ? (1.25 + 0.40 * Math.max(0, Math.min(1, (ch.sy - CH*0.55) / (CH*0.365))))
     : 1;
   const s=SCALE*(1.0+0.45*(ch.sy/(CH)))*CHAR_SCALE*_grabBoost;
@@ -1436,7 +1521,16 @@ function drawCharBody(ch, s, c0, c1, c2, c3){
     drawImageChar(ch, s, normalImg, caughtImg);
     return;
   }
-  // PNG not loaded — draw nothing (image required)
+
+  // ── Canvas fallback (used until PNG loads, or if imgName is missing) ──
+  switch(ch.name){
+    case 'Moti':   drawMoti(s,c0,c1,c2,c3);  break;
+    case 'Alex':   drawAlex(s,c0,c1,c2,c3);  break;
+    case 'Nero':   drawNero(s,c0,c1,c2,c3);  break;
+    case 'Yaron':  drawYaron(s,c0,c1,c2,c3); break;
+    case 'Miko':   drawMiko(s,c0,c1,c2,c3);  break;
+    default:       drawGenericChar(ch,s,c0,c1,c2,c3); break;
+  }
 }
 
 // Draw a character using PNG images (transparent bg expected).
@@ -1455,7 +1549,14 @@ function drawImageChar(ch, s, normalImg, caughtImg){
   } else if(normalImg && normalImg.complete && normalImg.naturalWidth > 0){
     img = normalImg;       // walking (also fallback for placed/caught if sprite missing)
   } else {
-    return; // PNG not yet loaded — skip drawing
+    if(isMobile){
+      // Simple placeholder on mobile while PNG loads — no expensive ellipses
+      ctx.fillStyle = ch.col[0] || '#888';
+      ctx.fillRect(-11*s|0, -50*s|0, 22*s|0, 50*s|0);
+    } else {
+      drawGenericChar(ch, s, ch.col[0], ch.col[1], ch.col[2], ch.col[3]);
+    }
+    return;
   }
 
   const drawH = isPlaced ? 190 * s : 110 * s;
@@ -1463,7 +1564,182 @@ function drawImageChar(ch, s, normalImg, caughtImg){
   ctx.drawImage(img, (-drawW / 2) | 0, (-drawH) | 0, drawW | 0, drawH | 0);
 }
 
+// ── Moti (Singer) — tall, long dark hair, red scarf ──────────────────────
+function drawMoti(s,c0,c1,c2,c3){
+  // Body — slim black
+  ctx.fillStyle=c1; ctx.strokeStyle=c0; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(-9*s,-50*s,18*s,42*s,3*s); ctx.fill(); ctx.stroke();
+  // Red scarf
+  ctx.fillStyle=c0; ctx.beginPath();
+  ctx.moveTo(-9*s,-45*s); ctx.lineTo(9*s,-45*s); ctx.lineTo(12*s,-30*s); ctx.lineTo(-12*s,-30*s);
+  ctx.closePath(); ctx.fill();
+  // Head
+  ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(0,-62*s,13*s,15*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Long dark hair
+  ctx.fillStyle='#0d0005';
+  ctx.beginPath(); ctx.moveTo(-13*s,-70*s); ctx.lineTo(-18*s,-30*s); ctx.lineTo(-10*s,-48*s);
+  ctx.lineTo(-12*s,-70*s); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(13*s,-70*s); ctx.lineTo(16*s,-35*s); ctx.lineTo(10*s,-48*s);
+  ctx.lineTo(12*s,-70*s); ctx.closePath(); ctx.fill();
+  // Eyes
+  ctx.fillStyle='#111'; ctx.beginPath(); mEllipse(-5*s,-63*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(5*s,-63*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  // Microphone in hand
+  ctx.fillStyle='#666'; ctx.strokeStyle='#aaa'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(10*s,-42*s,5*s,20*s,2*s); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#333'; ctx.beginPath(); mEllipse(12.5*s,-44*s,5*s,7*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Legs
+  drawLegs(s,'#0d0005',c0);
+}
 
+// ── Alex (Bass) — medium build, blue outfit ──────────────────────────────
+function drawAlex(s,c0,c1,c2,c3){
+  ctx.fillStyle=c1; ctx.strokeStyle=c0; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(-11*s,-50*s,22*s,42*s,3*s); ctx.fill(); ctx.stroke();
+  // Bass guitar strap across body
+  ctx.strokeStyle=c2; ctx.lineWidth=2.5*s;
+  ctx.beginPath(); ctx.moveTo(-8*s,-48*s); ctx.lineTo(12*s,-15*s); ctx.stroke();
+  // Head — medium hair
+  ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(0,-63*s,13*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#1a0808';
+  ctx.beginPath(); mEllipse(0,-73*s,13*s,7*s,0,0,Math.PI*2); ctx.fill();
+  // Stubble
+  ctx.fillStyle='rgba(80,40,40,0.4)';
+  ctx.beginPath(); mEllipse(0,-57*s,8*s,5*s,0,0,Math.PI*2); ctx.fill();
+  // Eyes
+  ctx.fillStyle='#111'; ctx.beginPath(); mEllipse(-4*s,-64*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(4*s,-64*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  drawLegs(s,c1,c0);
+}
+
+// ── Nero (Guitar) — spiky hair, dark green ──────────────────────────────
+function drawNero(s,c0,c1,c2,c3){
+  ctx.fillStyle=c1; ctx.strokeStyle=c0; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(-10*s,-50*s,20*s,42*s,3*s); ctx.fill(); ctx.stroke();
+  // Head
+  ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(0,-62*s,12*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  // Spiky hair
+  ctx.fillStyle='#060f08';
+  for(let i=-2;i<=2;i++){
+    ctx.beginPath();
+    ctx.moveTo(i*5*s,-72*s);
+    ctx.lineTo((i-0.8)*5*s,-84*s);
+    ctx.lineTo((i+0.8)*5*s,-84*s);
+    ctx.closePath(); ctx.fill();
+  }
+  ctx.fillStyle='#060f08';
+  ctx.beginPath(); mEllipse(0,-72*s,12*s,4*s,0,0,Math.PI*2); ctx.fill();
+  // Eyes
+  ctx.fillStyle='#0a2010'; ctx.beginPath(); mEllipse(-4*s,-63*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(4*s,-63*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
+  // Guitar pick in mouth (detail)
+  ctx.fillStyle=c2; ctx.beginPath(); mEllipse(5*s,-56*s,3*s,2*s,0.3,0,Math.PI*2); ctx.fill();
+  drawLegs(s,'#060f08',c0);
+}
+
+// ── Yaron (Drums) — stocky, silver accent ───────────────────────────────
+function drawYaron(s,c0,c1,c2,c3){
+  // Stocky body
+  ctx.fillStyle=c1; ctx.strokeStyle=c0; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(-14*s,-48*s,28*s,40*s,3*s); ctx.fill(); ctx.stroke();
+  // T-shirt detail
+  ctx.fillStyle=c2; ctx.globalAlpha=0.2;
+  ctx.fillRect(-10*s,-45*s,20*s,15*s); ctx.globalAlpha=1;
+  // Head — round, short hair
+  ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(0,-61*s,15*s,14*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#111';
+  ctx.beginPath(); mEllipse(0,-71*s,15*s,7*s,0,0,Math.PI*2); ctx.fill();
+  // Beard
+  ctx.fillStyle='rgba(60,40,20,0.7)';
+  ctx.beginPath(); mEllipse(0,-56*s,10*s,7*s,0,0,Math.PI*2); ctx.fill();
+  // Eyes
+  ctx.fillStyle='#0a0a05'; ctx.beginPath(); mEllipse(-5*s,-63*s,3*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(5*s,-63*s,3*s,3*s,0,0,Math.PI*2); ctx.fill();
+  // Drumsticks
+  ctx.strokeStyle='#c8a060'; ctx.lineWidth=3*s; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(-18*s,-42*s); ctx.lineTo(-8*s,-10*s); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(18*s,-42*s); ctx.lineTo(8*s,-10*s); ctx.stroke();
+  drawLegs(s,c1,'#888');
+}
+
+// ── Miko (Guitar) — long blonde hair, purple ────────────────────────────
+function drawMiko(s,c0,c1,c2,c3){
+  ctx.fillStyle=c1; ctx.strokeStyle=c0; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(-10*s,-50*s,20*s,42*s,3*s); ctx.fill(); ctx.stroke();
+  // Long blonde hair (cascading down)
+  ctx.fillStyle='#d4a800';
+  ctx.beginPath(); ctx.moveTo(-12*s,-74*s); ctx.bezierCurveTo(-20*s,-60*s,-22*s,-30*s,-18*s,-10*s);
+  ctx.lineTo(-12*s,-10*s); ctx.bezierCurveTo(-10*s,-30*s,-8*s,-55*s,-10*s,-74*s); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(12*s,-74*s); ctx.bezierCurveTo(20*s,-60*s,22*s,-30*s,18*s,-10*s);
+  ctx.lineTo(12*s,-10*s); ctx.bezierCurveTo(10*s,-30*s,8*s,-55*s,10*s,-74*s); ctx.closePath(); ctx.fill();
+  // Head
+  ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(0,-63*s,11*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#d4a800'; ctx.beginPath(); mEllipse(0,-72*s,11*s,5*s,0,0,Math.PI*2); ctx.fill();
+  // Eyes — purple tinted
+  ctx.fillStyle='#3a0050'; ctx.beginPath(); mEllipse(-4*s,-64*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(4*s,-64*s,3*s,3.5*s,0,0,Math.PI*2); ctx.fill();
+  drawLegs(s,c1,c0);
+}
+
+// ── Generic (non-band / metal heads) ────────────────────────────────────
+function drawGenericChar(ch, s, c0, c1, c2, c3){
+  const isMH = ch.name.startsWith('Metal Head');
+  // Body
+  ctx.fillStyle=c1; ctx.strokeStyle=c0; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); ctx.roundRect(-11*s,-48*s,22*s,40*s,3*s); ctx.fill(); ctx.stroke();
+
+  // Metal head: horn gesture
+  if(isMH){
+    ctx.strokeStyle=c2; ctx.lineWidth=2.5*s; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(12*s,-38*s); ctx.lineTo(22*s,-28*s); ctx.stroke();
+    // Rock horns hand
+    ctx.strokeStyle=c3; ctx.lineWidth=2*s;
+    ctx.beginPath(); ctx.moveTo(18*s,-24*s); ctx.lineTo(15*s,-22*s);
+    ctx.moveTo(22*s,-24*s); ctx.lineTo(25*s,-20*s);
+    ctx.stroke();
+  }
+
+  // Head
+  ctx.fillStyle=c3; ctx.strokeStyle='#333'; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(0,-61*s,12*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+
+  // Hair variation by index
+  const hidx=parseInt(ch.name.split(' ').pop())||0;
+  ctx.fillStyle=c0;
+  if(hidx%3===0){ // long
+    ctx.beginPath(); ctx.moveTo(-12*s,-70*s); ctx.lineTo(-16*s,-30*s); ctx.lineTo(-8*s,-48*s); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(12*s,-70*s); ctx.lineTo(16*s,-30*s); ctx.lineTo(8*s,-48*s); ctx.closePath(); ctx.fill();
+  } else if(hidx%3===1){ // short
+    ctx.beginPath(); mEllipse(0,-71*s,12*s,5*s,0,0,Math.PI*2); ctx.fill();
+  } else { // mohawk
+    for(let i=-1;i<=1;i++){
+      ctx.beginPath(); ctx.moveTo(i*4*s,-70*s); ctx.lineTo((i-0.5)*4*s,-84*s); ctx.lineTo((i+0.5)*4*s,-84*s); ctx.closePath(); ctx.fill();
+    }
+    ctx.beginPath(); mEllipse(0,-70*s,12*s,4*s,0,0,Math.PI*2); ctx.fill();
+  }
+
+  // Eyes
+  ctx.fillStyle='#111'; ctx.beginPath(); mEllipse(-4*s,-62*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); mEllipse(4*s,-62*s,2.5*s,3*s,0,0,Math.PI*2); ctx.fill();
+
+  drawLegs(s,c1,c0);
+}
+
+function drawLegs(s, pantCol, shoeCol){
+  // Pants
+  ctx.fillStyle=pantCol; ctx.strokeStyle='rgba(0,0,0,0.5)'; ctx.lineWidth=1*s;
+  ctx.beginPath(); ctx.roundRect(-10*s,-10*s,9*s,34*s,2*s); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(1*s,-10*s,9*s,34*s,2*s); ctx.fill(); ctx.stroke();
+  // Shoes
+  ctx.fillStyle=shoeCol||'#111'; ctx.strokeStyle='#000'; ctx.lineWidth=1*s;
+  ctx.beginPath(); ctx.roundRect(-12*s,22*s,13*s,8*s,2*s); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); ctx.roundRect(1*s,22*s,13*s,8*s,2*s); ctx.fill(); ctx.stroke();
+}
 
 // ── Speech bubble ──────────────────────────────────────────────────────────
 function drawSpeechBubble(text, x, y, s){
@@ -1527,6 +1803,40 @@ function drawPlacedChars(){
   }
 }
 
+function drawPlacedInstrument(id, s){
+  ctx.save(); ctx.globalAlpha=0.85;
+  switch(id){
+    case 'mic':
+      // Mic held in front
+      ctx.fillStyle='#666'; ctx.strokeStyle='#aaa'; ctx.lineWidth=1.5*s;
+      ctx.beginPath(); ctx.roundRect(12*s,-46*s,5*s,18*s,2*s); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#333'; ctx.beginPath(); mEllipse(14.5*s,-48*s,5*s,6*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+      break;
+    case 'bass':
+      drawSmallGuitar(s,'bass'); break;
+    case 'guitar_l':
+    case 'guitar_r':
+      drawSmallGuitar(s,'guitar'); break;
+    case 'drums':
+      // Drumsticks raised
+      ctx.strokeStyle='#c8a060'; ctx.lineWidth=3*s; ctx.lineCap='round';
+      ctx.beginPath(); ctx.moveTo(-14*s,-48*s); ctx.lineTo(-6*s,-20*s); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(14*s,-52*s); ctx.lineTo(6*s,-20*s); ctx.stroke();
+      break;
+  }
+  ctx.restore();
+}
+
+function drawSmallGuitar(s, type){
+  const isBase=type==='bass';
+  const col=isBase?'#3366cc':'#336622';
+  ctx.save(); ctx.translate(14*s,-28*s); ctx.rotate(-0.4);
+  ctx.fillStyle=isBase?'#1a2040':'#1a2810'; ctx.strokeStyle=col; ctx.lineWidth=1.5*s;
+  ctx.beginPath(); mEllipse(0,-8*s,10*s,13*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.beginPath(); mEllipse(3*s,8*s,13*s,15*s,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#2a1808'; ctx.fillRect(-3*s,-28*s,6*s,22*s);
+  ctx.restore();
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // DRAWING — STICKY HAND (Chicken Garden style)
@@ -1696,19 +2006,46 @@ function drawEscapedMsg(){
 }
 
 function drawCursor(){
-  if(isMobile) return; // no crosshair on mobile
+  if(isMobile) return; // no cursor on mobile
   ctx.save();
   const active = hand.state==='carrying';
-  ctx.strokeStyle=active?'rgba(240,200,0,.75)':'rgba(255,60,60,.65)';
-  ctx.lineWidth=1.5*SCALE;
-  const r=13*SCALE;
-  ctx.beginPath(); ctx.arc(mx,my,r,0,Math.PI*2); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(mx,my-r*1.7); ctx.lineTo(mx,my-r*1.1); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(mx,my+r*1.1); ctx.lineTo(mx,my+r*1.7); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(mx-r*1.7,my); ctx.lineTo(mx-r*1.1,my); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(mx+r*1.1,my); ctx.lineTo(mx+r*1.7,my); ctx.stroke();
-  ctx.fillStyle=active?'rgba(240,200,0,.9)':'rgba(255,60,60,.85)';
-  ctx.beginPath(); ctx.arc(mx,my,2.5*SCALE,0,Math.PI*2); ctx.fill();
+  const r = 18 * SCALE;
+  const cx = mx, cy = my;
+
+  // Colour: gold when carrying, red pentagram otherwise
+  const col  = active ? 'rgba(240,200,0,.85)' : 'rgba(200,0,0,.90)';
+  const glow = active ? 'rgba(240,200,0,.4)'  : 'rgba(180,0,0,.45)';
+
+  ctx.strokeStyle = col;
+  ctx.fillStyle   = col;
+  ctx.lineWidth   = 1.6 * SCALE;
+  if(!isMobile){ ctx.shadowColor = glow; ctx.shadowBlur = 10; }
+
+  // ── Outer circle ─────────────────────────────────────────────────────
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.stroke();
+
+  // ── Inverted pentagram (point down) ──────────────────────────────────
+  // 5 vertices of a regular pentagon, rotated so one point faces down
+  // Start angle π/2 + π = 3π/2 puts first vertex at bottom (inverted)
+  const pts = [];
+  for(let i=0;i<5;i++){
+    const a = (Math.PI/2 + Math.PI) + (i * 2*Math.PI/5); // inverted: top gap, point at bottom
+    pts.push({ x: cx + r*0.82*Math.cos(a), y: cy + r*0.82*Math.sin(a) });
+  }
+  // Draw pentagram star: connect every other vertex (0→2→4→1→3→0)
+  ctx.beginPath();
+  ctx.moveTo(pts[0].x, pts[0].y);
+  ctx.lineTo(pts[2].x, pts[2].y);
+  ctx.lineTo(pts[4].x, pts[4].y);
+  ctx.lineTo(pts[1].x, pts[1].y);
+  ctx.lineTo(pts[3].x, pts[3].y);
+  ctx.closePath();
+  ctx.stroke();
+
+  // ── Small dot at center ───────────────────────────────────────────────
+  ctx.beginPath(); ctx.arc(cx, cy, 2*SCALE, 0, Math.PI*2); ctx.fill();
+
+  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
@@ -1845,6 +2182,15 @@ function render(ts){
   updateHand(dt);
   updateParticles(dt);
 
+  // Build walking-chars list once per frame (avoids filter inside render hot path)
+  walkingChars.length = 0;
+  const _grabbed = hand.grabbedChar;
+  for(let i=0;i<chars.length;i++){
+    const c=chars[i];
+    if(c.state!=='placed' && c!==_grabbed) walkingChars.push(c);
+  }
+  if(!isMobile) walkingChars.sort((a,b)=>a.sy-b.sy);
+
   ctx.clearRect(0,0,CW,CH);
 
   // Background
@@ -1859,13 +2205,8 @@ function render(ts){
   // Placed characters on stage
   drawPlacedChars();
 
-  // Walking characters (depth sorted on PC; direct on mobile for perf)
-  if(isMobile){
-    for(const c of chars){ if(c.state!=='placed' && c!==hand.grabbedChar) drawChar(c); }
-  } else {
-    const walkChars = chars.filter(c=>c.state!=='placed'&&c!==hand.grabbedChar).sort((a,b)=>a.sy-b.sy);
-    walkChars.forEach(drawChar);
-  }
+  // Walking characters
+  for(let i=0;i<walkingChars.length;i++) drawChar(walkingChars[i]);
 
   // Carried character drawn UNDER hand
   if(hand.grabbedChar && hand.state==='carrying'){
