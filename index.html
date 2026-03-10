@@ -860,7 +860,7 @@ if(crowdEvent && crowdEvent.type==='wall' && ch.type==='other'){
         if(Math.abs(ch.vx)>0.0002) ch.facing=ch.vx>0?1:-1;
         // Occasional direction change
         if(!isMobile && Math.random()<0.0008*dt){ch.vx*=-1;}
-        ch.sy = isMobile ? CH*ch.walkY : CH*ch.walkY + Math.sin(ch.bobPhase)*3*SCALE;
+        ch.sy = isMobile ? CH * Math.min(ch.walkY * 1.12, 0.93) : CH*ch.walkY + Math.sin(ch.bobPhase)*3*SCALE;
         ch.sx = CW*ch.x;
       }
     }
@@ -966,9 +966,10 @@ if(crowdEvent && crowdEvent.type==='wall' && ch.type==='other'){
         } // end else (non-roco or roco regular)
       }
       if(ch.type==='band'){
-        // Band: 2 sec escape timer
+        // Band: escape timer (3s mobile, 2s desktop)
         ch.escapeTimer += dt;
-        if(ch.escapeTimer >= 2*60){
+        const _escapeLimit = isMobile ? 3*60 : 2*60;
+        if(ch.escapeTimer >= _escapeLimit){
           // Escape! drop back to walking
           ch.state='walking';
           ch.x = Math.max(0.05, Math.min(0.95, ch.sx/CW));
@@ -1501,7 +1502,7 @@ function drawChar(ch){
   const _grabBoost = (!isMobile && _isGrabbedOther)
     ? (1.25 + 0.40 * Math.max(0, Math.min(1, (ch.sy - CH*0.55) / (CH*0.365))))
     : 1;
-  const s=SCALE*(1.0+0.45*(ch.sy/(CH)))*CHAR_SCALE*_grabBoost*(isMobile ? 1.15 : 1);
+  const s=SCALE*(1.0+0.45*(ch.sy/(CH)))*CHAR_SCALE*_grabBoost*(isMobile ? 1.32 : 1);
   ctx.translate(isMobile ? (ch.sx|0) : ch.sx, isMobile ? (ch.sy|0) : ch.sy);
   // Never mirror caught non-member images — always face forward
   if(ch.facing<0 && !_isGrabbedOther) ctx.scale(-1,1);
@@ -1523,8 +1524,9 @@ function drawChar(ch){
   if(ch.state==='grabbed'){
     ctx.save(); if(ch.facing<0) ctx.scale(-1,1);
     if(ch.type==='band'){
-      const secsLeft=Math.max(0,Math.ceil((2*60-ch.escapeTimer)/60));
-      const urgency=ch.escapeTimer/(2*60);
+      const _limit = isMobile ? 3*60 : 2*60;
+      const secsLeft=Math.max(0,Math.ceil((_limit-ch.escapeTimer)/60));
+      const urgency=ch.escapeTimer/_limit;
       // Big floating countdown digit above the character
       const digitSize=Math.round(21*s);
       const pulse = isMobile ? 1 : 1+0.18*Math.sin(Date.now()/120);
@@ -1793,7 +1795,7 @@ function drawLegs(s, pantCol, shoeCol){
 
 // ── Speech bubble ──────────────────────────────────────────────────────────
 function drawSpeechBubble(text, x, y, s){
-  const ms = isMobile ? s * 1.25 : s;
+  const ms = isMobile ? s * 1.44 : s;
   const lines=text.split('\n');
   const bw=Math.max(...lines.map(l=>l.length))*3.6*ms+1*ms;
   const bh=lines.length*13*ms+4*ms;
