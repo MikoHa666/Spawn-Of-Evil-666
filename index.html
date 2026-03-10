@@ -685,7 +685,10 @@ document.getElementById('splash-btn').addEventListener('pointerdown', e=>{
     '\u2026The elders of the Internet know it for sure.',
     '\u2026And three raccoons who witnessed it.',
     '\u2026Please don\u2019t fact-check this.',
-    '\u2026The lawyers said this was safer.'
+    '\u2026The lawyers said this was safer.',
+    '\u2026Ask Berti from the Night Light in Hamburg to confirm it (He will not\u2026).',
+    '\u2026Check the Reeperbahn for clues.',
+    '\u2026Maybe the bartenders in the Gagarin TLV know something.'
   ];
   const _pick = _disclaimers[Math.floor(Math.random() * _disclaimers.length)];
   const cover = document.getElementById('true-story-cover');
@@ -1606,7 +1609,7 @@ function drawImageChar(ch, s, normalImg, caughtImg){
     return;
   }
 
-  const drawH = isPlaced ? 190 * s : 110 * s;
+  const drawH = isPlaced ? 190 * s : (110 * s) * (isMobile && isCaught ? 1.20 : 1);
   const drawW = drawH * (img.naturalWidth / img.naturalHeight);
   ctx.drawImage(img, (-drawW / 2) | 0, (-drawH) | 0, drawW | 0, drawH | 0);
 }
